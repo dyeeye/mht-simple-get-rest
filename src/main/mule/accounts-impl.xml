@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core"
+	xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<flow name="get:\accounts-impl" doc:id="7ba248a3-c2dd-4ee9-b0c8-7e0ab0fcd133" >
+		<set-variable value="#[attributes.headers.accept]" doc:name="Set Variable" doc:id="3491608d-1cfc-444a-bdb8-38be83414e31" variableName="accept"/>
+		<http:request method="GET" doc:name="Request" doc:id="b654db76-8175-4e2c-b7b9-398a8834641f" path="/collections/accounts" config-ref="HTTP_Request_configuration">
+			<http:query-params ><![CDATA[#[output applicaton/java
+---
+{
+	apiKey : "YOURAPIKEY"
+}]]]></http:query-params>
+		</http:request>
+		<choice doc:name="XML Accepted" doc:id="3b42aba6-efbc-41b4-8b50-6099e50a9608" >
+			<when expression="#[vars.accept=='application/xml']">
+				<ee:transform doc:name="Transform to XML Message" doc:id="7fcf1a08-7dd4-4c06-b762-77594ec8e1bc" >
+					<ee:message>
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+---
+accounts: {
+	account: payload as Array map ({
+		name: $.name,
+	    surname: $.surname,
+	    role: $.role,
+	    rank: $.rank,
+	    login: $.'_id'
+	})
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise>
+				<ee:transform doc:name="Transform to JSON Message" doc:id="b53a630e-86d0-442b-9e89-a9cb3a8e4c61" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+(payload as Array map (value0, index0) -> {
+  name: value0.name,
+  surname: value0.surname,
+  role: value0.role,
+  rank: value0.rank as String,
+  login: value0."_id"
+})]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+	<flow name="get:\accounts\(login)-impl" doc:id="ccf1d7e8-f018-4cd8-adbd-4f56c37fe1a9" >
+		<set-variable value="#[attributes.headers.accept]" doc:name="Set Variable" doc:id="ab1c0012-82e8-46d2-8d7c-47703a492194" variableName="accept" />
+		<http:request method="GET" doc:name="Request" doc:id="551ade65-4f65-46f4-9e35-412ec5417353" config-ref="HTTP_Request_configuration" path="/collections/accounts/{login}" >
+			<http:uri-params ><![CDATA[#[output applicaton/java
+---
+{
+	login : vars.login
+}]]]></http:uri-params>
+			<http:query-params ><![CDATA[#[output applicaton/java
+---
+{
+	apiKey : "YOURAPIKEY"
+}]]]></http:query-params>
+		
+</http:request>
+		<choice doc:name="XML Accepted" doc:id="e2780331-4bed-442b-88f3-1e6c8c2910f5" >
+			<when expression="#[vars.accept=='application/xml']" >
+				<ee:transform doc:name="Transform to XML Message" doc:id="c84d27df-d59b-48e1-8aaa-bd7b73539213" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/xml
+---
+account: {
+	name: payload.name,
+	surname: payload.surname,
+	role: payload.role,
+	rank: payload.rank,
+	login: payload.'_id'
+}
+]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</when>
+			<otherwise >
+				<ee:transform doc:name="Transform to JSON Message" doc:id="45cab8d2-f20f-4dd4-9c64-e529bcf8b838" >
+					<ee:message >
+						<ee:set-payload ><![CDATA[%dw 2.0
+output application/json
+---
+{
+  name: payload.name,
+  surname: payload.surname,
+  role: payload.role,
+  rank: payload.rank,
+  login: payload."_id"
+}]]></ee:set-payload>
+					</ee:message>
+				</ee:transform>
+			</otherwise>
+		</choice>
+	</flow>
+</mule>
